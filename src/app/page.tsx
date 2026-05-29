@@ -819,6 +819,149 @@ function FrontAgents() {
    ADMIN SCREENS
    ═══════════════════════════════════════════════════ */
 
+/* ─── Database Status Indicator (Reusable Component) ─── */
+function DatabaseStatusIndicator() {
+  const [dbStatus, setDbStatus] = useState<'checking' | 'connected' | 'error'>('checking')
+  const [dbDetails, setDbDetails] = useState<any>(null)
+  const [showDbInfo, setShowDbInfo] = useState(false)
+
+  useEffect(() => {
+    let isMounted = true
+    const fetchStatus = async () => {
+      try {
+        const res = await fetch('/api/db-status')
+        const data = await res.json()
+        if (isMounted) {
+          setDbDetails(data)
+          setDbStatus(data.connected ? 'connected' : 'error')
+        }
+      } catch (error) {
+        if (isMounted) {
+          setDbStatus('error')
+          setDbDetails(null)
+        }
+      }
+    }
+    fetchStatus()
+    return () => { isMounted = false }
+  }, [])
+
+  const checkDbStatus = async () => {
+    setDbStatus('checking')
+    try {
+      const res = await fetch('/api/db-status')
+      const data = await res.json()
+      setDbDetails(data)
+      setDbStatus(data.connected ? 'connected' : 'error')
+    } catch (error) {
+      setDbStatus('error')
+      setDbDetails(null)
+    }
+  }
+
+  return (
+    <div className="mt-4">
+      {/* Status Badge */}
+      <div className="flex items-center justify-center gap-2">
+        {dbStatus === 'connected' && (
+          <button
+            onClick={() => setShowDbInfo(!showDbInfo)}
+            className="flex items-center gap-1.5 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 text-xs font-medium px-3 py-1.5 rounded-full hover:bg-green-200 dark:hover:bg-green-900/40 transition-colors cursor-pointer"
+          >
+            <Database className="w-3.5 h-3.5" />
+            <span className="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse" />
+            Database Terhubung
+          </button>
+        )}
+        {dbStatus === 'error' && (
+          <button
+            onClick={checkDbStatus}
+            className="flex items-center gap-1.5 bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400 text-xs font-medium px-3 py-1.5 rounded-full hover:bg-red-200 dark:hover:bg-red-900/40 transition-colors cursor-pointer"
+          >
+            <Database className="w-3.5 h-3.5" />
+            <AlertCircle className="w-3.5 h-3.5" />
+            Database Terputus
+          </button>
+        )}
+        {dbStatus === 'checking' && (
+          <span className="flex items-center gap-1.5 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 text-xs font-medium px-3 py-1.5 rounded-full">
+            <Database className="w-3.5 h-3.5" />
+            <span className="w-1.5 h-1.5 bg-blue-500 rounded-full animate-pulse" />
+            Mengecek...
+          </span>
+        )}
+      </div>
+
+      {/* Database Info Panel */}
+      {showDbInfo && dbDetails && (
+        <div className="mt-3 bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 rounded-2xl p-4 border border-blue-100 dark:border-blue-800 animate-[slideDown_0.2s_ease-out]">
+          <div className="flex items-center justify-between mb-3">
+            <div className="flex items-center gap-2">
+              <Database className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+              <h3 className="font-semibold text-gray-800 dark:text-gray-200 text-sm">Status Database</h3>
+            </div>
+            <button onClick={() => setShowDbInfo(false)} className="p-1 rounded-full hover:bg-white dark:hover:bg-gray-800 transition-colors">
+              <X className="w-4 h-4 text-gray-500" />
+            </button>
+          </div>
+
+          {dbDetails.connected ? (
+            <div className="space-y-3">
+              <div className="flex items-center gap-2 text-sm">
+                <CheckCircle2 className="w-4 h-4 text-green-500" />
+                <span className="text-green-700 dark:text-green-400 font-medium">{dbDetails.message}</span>
+              </div>
+              <div className="grid grid-cols-2 gap-3 mt-3">
+                <div className="bg-white dark:bg-gray-800 rounded-xl p-3 border border-blue-100 dark:border-blue-800">
+                  <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">Admin Users</p>
+                  <p className="text-xl font-bold text-gray-800 dark:text-gray-200">
+                    {dbDetails.tables?.AdminUser?.count || 0}
+                  </p>
+                  <p className="text-[10px] text-green-600 mt-1">
+                    {dbDetails.tables?.AdminUser?.exists ? '✓ Table Ready' : '⚠ Not Setup'}
+                  </p>
+                </div>
+                <div className="bg-white dark:bg-gray-800 rounded-xl p-3 border border-blue-100 dark:border-blue-800">
+                  <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">Visitors/Leads</p>
+                  <p className="text-xl font-bold text-gray-800 dark:text-gray-200">
+                    {dbDetails.tables?.Visitor?.count || 0}
+                  </p>
+                  <p className="text-[10px] text-green-600 mt-1">
+                    {dbDetails.tables?.Visitor?.exists ? '✓ Table Ready' : '⚠ Not Setup'}
+                  </p>
+                </div>
+              </div>
+              <div className="text-[10px] text-gray-400 mt-2">
+                Host: {dbDetails.supabaseUrl}
+              </div>
+            </div>
+          ) : (
+            <div className="space-y-2">
+              <div className="flex items-center gap-2 text-sm">
+                <AlertCircle className="w-4 h-4 text-red-500" />
+                <span className="text-red-700 dark:text-red-400 font-medium">{dbDetails.message}</span>
+              </div>
+              <div className="bg-white dark:bg-gray-800 rounded-xl p-3 border border-red-100 dark:border-red-800">
+                <p className="text-xs text-gray-500 dark:text-gray-400 mb-2">Database belum disetup</p>
+                <div className="space-y-1 text-xs text-gray-600 dark:text-gray-300">
+                  {Object.entries(dbDetails.tables || {}).map(([name, info]: [string, any]) => (
+                    <div key={name} className="flex items-center justify-between">
+                      <span>{name}</span>
+                      <span className={info.exists ? 'text-green-600' : 'text-red-600'}>
+                        {info.exists ? '✓ Ready' : '✗ Missing'}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  )
+}
+
 /* ─── Admin Login ─── */
 function AdminLogin() {
   const { navigate, login, showModal } = useStore()
@@ -845,7 +988,11 @@ function AdminLogin() {
           <h1 className="text-xl font-bold text-gray-800 dark:text-gray-200">Admin Login</h1>
           <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">PropertiHub Panel</p>
         </div>
-        <div className="space-y-4">
+        
+        {/* Database Status Indicator */}
+        <DatabaseStatusIndicator />
+
+        <div className="space-y-4 mt-6">
           <input type="text" value={username} onChange={(e) => setUsername(e.target.value)} placeholder="Username" className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 text-gray-800 dark:text-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
           <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="Password" onKeyDown={(e) => e.key === 'Enter' && handleLogin()} className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 text-gray-800 dark:text-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
           <button onClick={handleLogin} className="w-full py-3 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-semibold shadow-lg transition-colors">
@@ -863,17 +1010,6 @@ function AdminLogin() {
 /* ─── Admin Dashboard ─── */
 function AdminDashboard() {
   const { navigate, properties, visitors, agents, promos, logout, isDark, toggleDark, articles, reviews } = useStore()
-  const [dbStatus, setDbStatus] = useState<'checking' | 'connected' | 'error'>('checking')
-
-  useEffect(() => {
-    fetch('/api/seed-data')
-      .then(res => {
-        if (res.ok) setDbStatus('connected')
-        else setDbStatus('error')
-      })
-      .catch(() => setDbStatus('error'))
-  }, [])
-
   const weeklyData = useMemo(() => {
     const days = ['Min', 'Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab']
     const now = new Date()
@@ -914,24 +1050,6 @@ function AdminDashboard() {
           <p className="text-sm text-blue-200">PropertiHub Admin</p>
         </div>
         <div className="flex items-center gap-2">
-          {dbStatus === 'connected' && (
-            <span className="flex items-center gap-1.5 bg-green-500/20 text-green-100 text-xs font-medium px-2.5 py-1 rounded-full">
-              <span className="w-1.5 h-1.5 bg-green-400 rounded-full animate-pulse" />
-              Database Terhubung
-            </span>
-          )}
-          {dbStatus === 'error' && (
-            <span className="flex items-center gap-1.5 bg-red-500/20 text-red-100 text-xs font-medium px-2.5 py-1 rounded-full">
-              <span className="w-1.5 h-1.5 bg-red-400 rounded-full" />
-              Database Error
-            </span>
-          )}
-          {dbStatus === 'checking' && (
-            <span className="flex items-center gap-1.5 bg-blue-500/20 text-blue-100 text-xs font-medium px-2.5 py-1 rounded-full">
-              <span className="w-1.5 h-1.5 bg-blue-400 rounded-full animate-pulse" />
-              Menyambungkan...
-            </span>
-          )}
           <button onClick={toggleDark} className="p-2 rounded-full hover:bg-blue-600 transition-colors">
             {isDark ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
           </button>
