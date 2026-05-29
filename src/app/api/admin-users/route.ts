@@ -1,12 +1,13 @@
-import { supabase } from '@/lib/supabase'
+import { db } from '@/lib/db'
 import { NextRequest } from 'next/server'
 
 export async function GET() {
   try {
-    const { data, error } = await supabase.from('AdminUser').select('*').order('createdAt', { ascending: false })
+    const users = await db.adminUser.findMany({
+      orderBy: { createdAt: 'desc' }
+    })
 
-    if (error) throw error
-    return Response.json(data || [])
+    return Response.json(users)
   } catch (error: unknown) {
     console.error('Error fetching admin users:', error)
     return Response.json({ error: 'Gagal mengambil data admin users' }, { status: 500 })
@@ -22,16 +23,17 @@ export async function POST(req: NextRequest) {
       return Response.json({ error: 'Username, password, dan name wajib diisi' }, { status: 400 })
     }
 
-    const { data, error } = await supabase.from('AdminUser').insert({
-      username,
-      password,
-      name,
-      email,
-      role: role || 'admin',
-    }).select().single()
+    const user = await db.adminUser.create({
+      data: {
+        username,
+        password,
+        name,
+        email,
+        role: role || 'admin',
+      }
+    })
 
-    if (error) throw error
-    return Response.json(data)
+    return Response.json(user)
   } catch (error: unknown) {
     console.error('Error creating admin user:', error)
     const message = error instanceof Error ? error.message : 'Gagal membuat admin user'
@@ -48,9 +50,10 @@ export async function DELETE(req: NextRequest) {
       return Response.json({ error: 'ID diperlukan' }, { status: 400 })
     }
 
-    const { error } = await supabase.from('AdminUser').delete().eq('id', id)
+    await db.adminUser.delete({
+      where: { id }
+    })
 
-    if (error) throw error
     return Response.json({ success: true })
   } catch (error: unknown) {
     console.error('Error deleting admin user:', error)
@@ -64,17 +67,18 @@ export async function PUT(req: NextRequest) {
     const body = await req.json()
     const { id, username, password, name, email, role } = body
 
-    const updateFields: Record<string, unknown> = {}
-    if (username !== undefined) updateFields.username = username
-    if (password !== undefined) updateFields.password = password
-    if (name !== undefined) updateFields.name = name
-    if (email !== undefined) updateFields.email = email
-    if (role !== undefined) updateFields.role = role
+    const user = await db.adminUser.update({
+      where: { id },
+      data: {
+        ...(username !== undefined && { username }),
+        ...(password !== undefined && { password }),
+        ...(name !== undefined && { name }),
+        ...(email !== undefined && { email }),
+        ...(role !== undefined && { role }),
+      }
+    })
 
-    const { data, error } = await supabase.from('AdminUser').update(updateFields).eq('id', id).select().single()
-
-    if (error) throw error
-    return Response.json(data)
+    return Response.json(user)
   } catch (error: unknown) {
     console.error('Error updating admin user:', error)
     const message = error instanceof Error ? error.message : 'Gagal mengupdate admin user'

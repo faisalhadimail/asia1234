@@ -3,108 +3,216 @@ import { PrismaClient } from '@prisma/client'
 const prisma = new PrismaClient()
 
 async function main() {
-  console.log('🌱 Starting seed...')
+  console.log('🌱 Starting database seeding...')
 
-  // Check and seed AdminUser
+  // Check if admin users already exist
   const adminCount = await prisma.adminUser.count()
   if (adminCount === 0) {
-    console.log('📝 Seeding AdminUser...')
+    console.log('📝 Creating admin users...')
     await prisma.adminUser.createMany({
       data: [
         {
+          name: 'Super Admin',
           username: 'admin',
           password: 'admin123',
+          email: 'admin@propertihub.com',
           role: 'superadmin',
-          name: 'Administrator',
-          email: 'admin@example.com'
         },
         {
+          name: 'Marketing Manager',
           username: 'marketing',
-          password: 'marketing123',
+          password: 'admin123',
+          email: 'marketing@propertihub.com',
           role: 'admin',
-          name: 'Marketing Team',
-          email: 'marketing@example.com'
         },
         {
+          name: 'Sales Agent',
           username: 'sales',
-          password: 'sales123',
+          password: 'admin123',
+          email: 'sales@propertihub.com',
           role: 'admin',
-          name: 'Sales Team',
-          email: 'sales@example.com'
-        }
-      ]
+        },
+      ],
     })
-    console.log('✅ AdminUser seeded successfully!')
+    console.log('✅ Admin users created')
   } else {
-    console.log(`⏭️  AdminUser already exists (${adminCount} records)`)
+    console.log('⚠️  Admin users already exist, skipping...')
   }
 
-  // Check and seed Visitor (Leads)
-  const visitorCount = await prisma.visitor.count()
-  if (visitorCount === 0) {
-    console.log('📝 Seeding Visitor (Leads)...')
-    await prisma.visitor.createMany({
+  // Check if property types already exist
+  const typeCount = await prisma.propertyType.count()
+  if (typeCount === 0) {
+    console.log('📝 Creating property types...')
+    await prisma.propertyType.createMany({
+      data: [
+        { name: 'Rumah', icon: 'home', displayOrder: 1 },
+        { name: 'Apartemen', icon: 'building-2', displayOrder: 2 },
+        { name: 'Ruko', icon: 'building', displayOrder: 3 },
+        { name: 'Tanah', icon: 'trees', displayOrder: 4 },
+      ],
+    })
+    console.log('✅ Property types created')
+  } else {
+    console.log('⚠️  Property types already exist, skipping...')
+  }
+
+  // Check if locations already exist
+  const locationCount = await prisma.location.count()
+  if (locationCount === 0) {
+    console.log('📝 Creating locations...')
+    await prisma.location.createMany({
+      data: [
+        {
+          kabupaten: 'Palembang',
+          kecamatan: JSON.stringify(['Ilir Timur I', 'Ilir Timur II', 'Ilir Barat I', 'Ilir Barat II', 'Seberang Ulu I', 'Seberang Ulu II']),
+        },
+        {
+          kabupaten: 'Lahat',
+          kecamatan: JSON.stringify(['Lahat', 'Kikim Barat', 'Kikim Selatan', 'Kikim Timur', 'Kikim Tengah', 'Pagar Gunung']),
+        },
+        {
+          kabupaten: 'Prabumulih',
+          kecamatan: JSON.stringify(['Prabumulih Timur', 'Prabumulih Barat', 'Prabumulih Utara', 'Prabumulih Selatan']),
+        },
+      ],
+    })
+    console.log('✅ Locations created')
+  } else {
+    console.log('⚠️  Locations already exist, skipping...')
+  }
+
+  // Check if promos already exist
+  const promoCount = await prisma.promo.count()
+  if (promoCount === 0) {
+    console.log('📝 Creating promos...')
+    await prisma.promo.createMany({
+      data: [
+        {
+          badge: 'HOT DEAL',
+          title: 'Diskon DP 0%',
+          subtitle: 'Tanpa uang muka khusus bulan ini',
+          active: true,
+          displayOrder: 1,
+        },
+        {
+          badge: 'SPECIAL',
+          title: 'Free Biaya KPR',
+          subtitle: 'Dapatkan promo gratis biaya administrasi',
+          active: true,
+          displayOrder: 2,
+        },
+        {
+          badge: 'LIMITED',
+          title: 'Bonus Furnitur',
+          subtitle: 'Dapatkan set furnitur lengkap',
+          active: true,
+          displayOrder: 3,
+        },
+      ],
+    })
+    console.log('✅ Promos created')
+  } else {
+    console.log('⚠️  Promos already exist, skipping...')
+  }
+
+  // Check if agents already exist
+  const agentCount = await prisma.agent.count()
+  if (agentCount === 0) {
+    console.log('📝 Creating agents...')
+    await prisma.agent.createMany({
       data: [
         {
           name: 'Budi Santoso',
+          role: 'Senior Marketing',
           phone: '081234567890',
-          email: 'budi@email.com',
-          interest: 'Rumah Minimalis',
-          status: 'Baru',
-          notes: 'Lead dari website'
+          email: 'budi@propertihub.com',
+          image: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=200&h=200&fit=crop&crop=face',
+          whatsapp: '6281234567890',
+          displayOrder: 1,
         },
         {
           name: 'Siti Rahayu',
+          role: 'Marketing Executive',
           phone: '081234567891',
-          email: 'siti@email.com',
-          interest: 'Apartemen Mewah',
-          status: 'Follow Up',
-          notes: 'Ingin info unit 2BR'
+          email: 'siti@propertihub.com',
+          image: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=200&h=200&fit=crop&crop=face',
+          whatsapp: '6281234567891',
+          displayOrder: 2,
         },
         {
-          name: 'Andi Wijaya',
+          name: 'Ahmad Wijaya',
+          role: 'Sales Agent',
           phone: '081234567892',
-          email: 'andi@email.com',
-          interest: 'Cluster Family',
-          status: 'Hot Lead',
-          notes: 'Siap KPR, survey minggu depan'
+          email: 'ahmad@propertihub.com',
+          image: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=200&h=200&fit=crop&crop=face',
+          whatsapp: '6281234567892',
+          displayOrder: 3,
         },
-        {
-          name: 'Dewi Lestari',
-          phone: '081234567893',
-          email: 'dewi@email.com',
-          interest: 'Ruko Komersial',
-          status: 'Closing',
-          notes: 'Booking fee sudah dibayarkan'
-        },
-        {
-          name: 'Eko Pratama',
-          phone: '081234567894',
-          email: 'eko@email.com',
-          interest: 'Tanah Kavling',
-          status: 'Baru',
-          notes: 'Cari lokasi strategis dekat tol'
-        }
-      ]
+      ],
     })
-    console.log('✅ Visitor (Leads) seeded successfully!')
+    console.log('✅ Agents created')
   } else {
-    console.log(`⏭️  Visitor already exists (${visitorCount} records)`)
+    console.log('⚠️  Agents already exist, skipping...')
   }
 
-  // Display summary
-  const finalAdminCount = await prisma.adminUser.count()
-  const finalVisitorCount = await prisma.visitor.count()
+  // Check if sample visitors already exist
+  const visitorCount = await prisma.visitor.count()
+  if (visitorCount === 0) {
+    console.log('📝 Creating sample visitors...')
+    await prisma.visitor.createMany({
+      data: [
+        {
+          date: new Date().toISOString().split('T')[0],
+          name: 'Budi Santoso',
+          phone: '081234567890',
+          email: 'budi@gmail.com',
+          type: 'Rumah',
+          building: '45/72',
+          location: 'Palembang, Ilir Timur I',
+          dp: 'Rp 50.000.000',
+          promo: 'Diskon DP 0%',
+          status: 'hot',
+          interest: 'Tinggi',
+        },
+        {
+          date: new Date().toISOString().split('T')[0],
+          name: 'Siti Aminah',
+          phone: '081234567891',
+          email: 'siti@gmail.com',
+          type: 'Rumah',
+          building: '60/90',
+          location: 'Palembang, Ilir Timur II',
+          dp: 'Rp 65.000.000',
+          promo: 'Free Biaya KPR',
+          status: 'warm',
+          interest: 'Sedang',
+        },
+        {
+          date: new Date().toISOString().split('T')[0],
+          name: 'Ahmad Fauzi',
+          phone: '081234567892',
+          email: 'ahmad@gmail.com',
+          type: 'Ruko',
+          building: '80/60',
+          location: 'Palembang, Ilir Barat I',
+          dp: 'Rp 85.000.000',
+          promo: 'Bonus Furnitur',
+          status: 'new',
+          interest: 'Tinggi',
+        },
+      ],
+    })
+    console.log('✅ Sample visitors created')
+  } else {
+    console.log('⚠️  Visitors already exist, skipping...')
+  }
 
-  console.log('\n📊 Seed Summary:')
-  console.log(`   - AdminUser: ${finalAdminCount} records`)
-  console.log(`   - Visitor: ${finalVisitorCount} records`)
-  console.log('\n✅ Seed completed successfully!')
+  console.log('✅ Database seeding completed!')
 }
 
 main()
   .catch((e) => {
-    console.error('❌ Seed failed:', e)
+    console.error('❌ Error seeding database:', e)
     process.exit(1)
   })
   .finally(async () => {

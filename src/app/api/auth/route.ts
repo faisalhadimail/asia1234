@@ -1,4 +1,4 @@
-import { supabase } from '@/lib/supabase'
+import { db } from '@/lib/db'
 import { NextRequest } from 'next/server'
 
 export async function POST(req: NextRequest) {
@@ -10,12 +10,9 @@ export async function POST(req: NextRequest) {
       return Response.json({ success: false, error: 'Username dan password wajib diisi' }, { status: 400 })
     }
 
-    const { data: user, error } = await supabase.from('AdminUser').select('*').eq('username', username).single()
-
-    if (error && error.code !== 'PGRST116') {
-      console.error('Auth error:', error)
-      return Response.json({ success: false, error: 'Terjadi kesalahan server' }, { status: 500 })
-    }
+    const user = await db.adminUser.findUnique({
+      where: { username }
+    })
 
     if (!user || user.password !== password) {
       return Response.json({ success: false, error: 'Username atau password salah' }, { status: 401 })

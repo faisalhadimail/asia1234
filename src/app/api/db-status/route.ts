@@ -1,51 +1,47 @@
-import { supabase } from '@/lib/supabase'
+import { db } from '@/lib/db'
+import { NextResponse } from 'next/server'
 
 export async function GET() {
   try {
-    // Check if Supabase is configured
-    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
-    const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY
+    // Check if DATABASE_URL is configured
+    const databaseUrl = process.env.DATABASE_URL
 
-    if (!supabaseUrl || !supabaseKey || supabaseUrl.includes('placeholder')) {
-      return Response.json({
+    if (!databaseUrl || databaseUrl.includes('placeholder')) {
+      return NextResponse.json({
         connected: false,
-        message: 'Supabase belum dikonfigurasi',
+        message: 'Database belum dikonfigurasi',
         tables: {}
       })
     }
 
-    // Try to query tables
-    const adminResult = await supabase.from('AdminUser').select('*', { count: 'exact', head: true })
-    const visitorResult = await supabase.from('Visitor').select('*', { count: 'exact', head: true })
+    // Try to query tables with Prisma
+    const adminCount = await db.adminUser.count()
+    const visitorCount = await db.visitor.count()
 
-    const tables: Record<string, any> = {
-      AdminUser: {
-        exists: !adminResult.error || adminResult.error.code !== '42P01',
-        count: adminResult.count || 0,
-        error: adminResult.error?.message || null
+    return NextResponse.json({
+      connected: true,
+      message: 'Terhubung ke database via Prisma',
+      tables: {
+        AdminUser: {
+          exists: true,
+          count: adminCount,
+          error: null
+        },
+        Visitor: {
+          exists: true,
+          count: visitorCount,
+          error: null
+        }
       },
-      Visitor: {
-        exists: !visitorResult.error || visitorResult.error.code !== '42P01',
-        count: visitorResult.count || 0,
-        error: visitorResult.error?.message || null
-      }
-    }
-
-    // Check if at least one table exists
-    const isConnected = tables.AdminUser.exists || tables.Visitor.exists
-
-    return Response.json({
-      connected: isConnected,
-      message: isConnected ? 'Terhubung ke database' : 'Database belum disetup',
-      tables,
-      supabaseUrl: supabaseUrl.replace('https://', '')
+      connectionType: 'Prisma ORM'
     })
   } catch (error: unknown) {
     console.error('DB Status error:', error)
-    return Response.json({
+    return NextResponse.json({
       connected: false,
       message: error instanceof Error ? error.message : 'Gagal mengecek status database',
-      tables: {}
+      tables: {},
+      connectionType: 'Prisma ORM'
     }, { status: 500 })
   }
 }
