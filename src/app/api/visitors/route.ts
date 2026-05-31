@@ -1,60 +1,81 @@
-import { db } from '@/lib/db'
+import { getCollection, createDocument, updateDocument, deleteDocument } from '@/lib/firestore'
 import { NextResponse } from 'next/server'
 
-// GET
-export async function GET() {
+// GET - Fetch all visitors
+export async function GET(request: Request) {
   try {
-    return NextResponse.json(await db.visitor.findMany({ orderBy: { createdAt: 'desc' } }))
+    const { searchParams } = new URL(request.url)
+    const id = searchParams.get('id')
+
+    if (id) {
+      const visitor = await getDocument('visitors', id)
+      if (!visitor) {
+        return NextResponse.json({ error: 'Visitor not found' }, { status: 404 })
+      }
+      return NextResponse.json(visitor)
+    }
+
+    const visitors = await getCollection('visitors')
+    const formatted = visitors.map((v: any) => ({
+      ...v,
+      createdAt: v.createdAt?.toDate?.()?.toISOString() || v.createdAt || new Date().toISOString(),
+    }))
+    return NextResponse.json(formatted)
   } catch (error) {
     console.error('Error fetching visitors:', error)
     return NextResponse.json({ error: 'Failed to fetch visitors' }, { status: 500 })
   }
 }
 
-// POST
+// POST - Create new visitor
 export async function POST(request: Request) {
   try {
-    const data = await request.json()
-    const visitor = await db.visitor.create({ data })
-    return NextResponse.json(visitor)
+    const body = await request.json()
+
+    const data = {
+      ...body,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+      status: body.status || 'new',
+    }
+
+    const result = await createDocument('visitors', data)
+    return NextResponse.json(result)
   } catch (error) {
     console.error('Error creating visitor:', error)
     return NextResponse.json({ error: 'Failed to create visitor' }, { status: 500 })
   }
 }
 
-// PUT - Update visitor status
+// PUT - Update visitor (including status)
 export async function PUT(request: Request) {
   try {
-    const data = await request.json()
-    const { id, status } = data
+    const body = await request.json()
 
-    if (!id || !status) {
-      return NextResponse.json({ error: 'ID and status are required' }, { status: 400 })
+    const data = {
+      ...body,
+      updatedAt: new Date(),
     }
 
-    const visitor = await db.visitor.update({
-      where: { id },
-      data: { status },
-    })
-    return NextResponse.json(visitor)
+    const result = await updateDocument('visitors', body.id, data)
+    return NextResponse.json(result)
   } catch (error) {
     console.error('Error updating visitor:', error)
     return NextResponse.json({ error: 'Failed to update visitor' }, { status: 500 })
   }
 }
 
-// DELETE
+// DELETE - Delete visitor
 export async function DELETE(request: Request) {
-  const { searchParams } = new URL(request.url)
-  const id = searchParams.get('id')
-
-  if (!id) {
-    return NextResponse.json({ error: 'ID is required' }, { status: 400 })
-  }
-
   try {
-    await db.visitor.delete({ where: { id } })
+    const { searchParams } = new URL(request.url)
+    const id = searchParams.get('id')
+
+    if (!id) {
+      return NextResponse.json({ error: 'Visitor ID is required' }, { status: 400 })
+    }
+
+    await deleteDocument('visitors', id)
     return NextResponse.json({ success: true })
   } catch (error) {
     console.error('Error deleting visitor:', error)

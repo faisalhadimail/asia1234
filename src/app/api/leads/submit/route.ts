@@ -1,27 +1,22 @@
-import { db } from '@/lib/db'
+import { createDocument } from '@/lib/firestore'
 import { NextResponse } from 'next/server'
 
 export async function POST(request: Request) {
   try {
-    const { name, phone, type, building, location, dp, promo } = await request.json()
+    const body = await request.json()
 
-    const visitor = await db.visitor.create({
-      data: {
-        date: new Date().toISOString().split('T')[0],
-        name: name || '',
-        phone: phone || '',
-        type: type || '',
-        building: building || '',
-        location: location || '',
-        dp: dp || '',
-        promo: promo || '',
-        status: 'Baru',
-      },
-    })
+    const data = {
+      ...body,
+      date: new Date().toISOString(),
+      status: 'new',
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    }
 
-    return NextResponse.json({ success: true, visitor })
+    const result = await createDocument('visitors', data)
+    return NextResponse.json({ success: true, lead: result })
   } catch (error) {
     console.error('Error submitting lead:', error)
-    return NextResponse.json({ error: 'Failed to submit lead' }, { status: 500 })
+    return NextResponse.json({ success: false, error: 'Failed to submit lead' }, { status: 500 })
   }
 }

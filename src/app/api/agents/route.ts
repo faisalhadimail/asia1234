@@ -1,49 +1,81 @@
-import { db } from '@/lib/db'
+import { getCollection, createDocument, updateDocument, deleteDocument } from '@/lib/firestore'
 import { NextResponse } from 'next/server'
 
-// GET
+// GET - Fetch all agents
 export async function GET(request: Request) {
-  const { searchParams } = new URL(request.url)
-  const id = searchParams.get('id')
-
   try {
+    const { searchParams } = new URL(request.url)
+    const id = searchParams.get('id')
+
     if (id) {
-      const agent = await db.agent.findUnique({ where: { id } })
+      const agent = await getDocument('agents', id)
       if (!agent) {
         return NextResponse.json({ error: 'Agent not found' }, { status: 404 })
       }
       return NextResponse.json(agent)
     }
-    return NextResponse.json(await db.agent.findMany({ orderBy: { createdAt: 'asc' } }))
+
+    const agents = await getCollection('agents')
+    return NextResponse.json(agents)
   } catch (error) {
     console.error('Error fetching agents:', error)
     return NextResponse.json({ error: 'Failed to fetch agents' }, { status: 500 })
   }
 }
 
-// POST
+// POST - Create new agent
 export async function POST(request: Request) {
   try {
-    const data = await request.json()
-    const agent = await db.agent.create({ data })
-    return NextResponse.json(agent)
+    const body = await request.json()
+
+    const data = {
+      ...body,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    }
+
+    const result = await createDocument('agents', data)
+    return NextResponse.json(result)
   } catch (error) {
     console.error('Error creating agent:', error)
     return NextResponse.json({ error: 'Failed to create agent' }, { status: 500 })
   }
 }
 
-// DELETE
-export async function DELETE(request: Request) {
-  const { searchParams } = new URL(request.url)
-  const id = searchParams.get('id')
-
-  if (!id) {
-    return NextResponse.json({ error: 'ID is required' }, { status: 400 })
-  }
-
+// PUT - Update agent
+export async function PUT(request: Request) {
   try {
-    await db.agent.delete({ where: { id } })
+    const body = await request.json()
+    const { id, ...updates } = body
+
+    if (!id) {
+      return NextResponse.json({ error: 'Agent ID is required' }, { status: 400 })
+    }
+
+    const data = {
+      ...updates,
+      updatedAt: new Date(),
+    }
+
+    const result = await updateDocument('agents', id, data)
+    return NextResponse.json(result)
+  } catch (error) {
+    console.error('Error updating agent:', error)
+    return NextResponse.json({ error: 'Failed to update agent' }, { status: 500 })
+  }
+}
+
+// DELETE - Delete agent
+export async function DELETE(request: Request) {
+  try {
+    const { searchParams } = new URL(request.url)
+    const id = searchParams.get('id')
+
+    if (!id) {
+      return NextResponse.json({ error: 'Agent ID is required' }, { status: 400 })
+    }
+
+    await deleteDocument('agents', id)
     return NextResponse.json({ success: true })
   } catch (error) {
     console.error('Error deleting agent:', error)

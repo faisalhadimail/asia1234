@@ -1,41 +1,29 @@
-import { db } from '@/lib/db'
+import { getDocument, updateDocument } from '@/lib/firestore'
 import { NextResponse } from 'next/server'
 
-// GET
+// GET - Fetch agency settings
 export async function GET() {
   try {
-    const agency = await db.agency.findFirst()
-    if (!agency) {
-      return NextResponse.json(
-        { id: 'default', name: 'PropertiHub', phone: '', address: '', kprInterest: 5.5 },
-        { status: 200 }
-      )
-    }
-    return NextResponse.json(agency)
+    const agency = await getDocument('settings', 'agency')
+    return NextResponse.json(agency || {})
   } catch (error) {
     console.error('Error fetching agency:', error)
     return NextResponse.json({ error: 'Failed to fetch agency' }, { status: 500 })
   }
 }
 
-// PUT
+// PUT - Update agency settings
 export async function PUT(request: Request) {
   try {
-    const data = await request.json()
-    const existing = await db.agency.findFirst()
+    const body = await request.json()
 
-    if (existing) {
-      const agency = await db.agency.update({
-        where: { id: existing.id },
-        data,
-      })
-      return NextResponse.json(agency)
-    } else {
-      const agency = await db.agency.create({
-        data: { id: 'default', ...data },
-      })
-      return NextResponse.json(agency)
+    const data = {
+      ...body,
+      updatedAt: new Date(),
     }
+
+    const result = await updateDocument('settings', 'agency', data)
+    return NextResponse.json(result)
   } catch (error) {
     console.error('Error updating agency:', error)
     return NextResponse.json({ error: 'Failed to update agency' }, { status: 500 })

@@ -1,34 +1,39 @@
-import { db } from '@/lib/db'
-import { NextRequest } from 'next/server'
+import { queryCollection } from '@/lib/firestore'
+import { where } from 'firebase/firestore'
+import { NextResponse } from 'next/server'
 
-export async function POST(req: NextRequest) {
+export async function POST(request: Request) {
   try {
-    const body = await req.json()
+    const body = await request.json()
     const { username, password } = body
 
     if (!username || !password) {
-      return Response.json({ success: false, error: 'Username dan password wajib diisi' }, { status: 400 })
+      return NextResponse.json({ success: false, error: 'Username dan password diperlukan' }, { status: 400 })
     }
 
-    const user = await db.adminUser.findUnique({
-      where: { username },
-    })
+    // Query admin user by username
+    const users = await queryCollection('adminUsers', [where('username', '==', username)])
 
-    if (!user || user.password !== password) {
-      return Response.json({ success: false, error: 'Username atau password salah' }, { status: 401 })
+    if (users.length === 0) {
+      return NextResponse.json({ success: false, error: 'User tidak ditemukan' }, { status: 401 })
     }
 
-    return Response.json({
+    const user = users[0]
+
+    // Check password (in production, use bcrypt for password hashing)
+    if (user.password !== password) {
+      return NextResponse.json({ success: false, error: 'Password salah' }, { status: 401 })
+    }
+
+    // Return user without password
+    const { password: _, ...userWithoutPassword } = user
+
+    return NextResponse.json({
       success: true,
-      user: {
-        id: user.id,
-        name: user.name,
-        username: user.username,
-        role: user.role,
-      },
+      user: userWithoutPassword
     })
   } catch (error) {
-    console.error('Auth error:', error)
-    return Response.json({ success: false, error: 'Terjadi kesalahan server' }, { status: 500 })
+    console.error('Error during login:', error)
+    return NextResponse.json({ success: false, error: 'Login failed' }, { status: 500 })
   }
 }
