@@ -1,50 +1,50 @@
-import { supabase } from '@/lib/supabase'
-import { NextRequest } from 'next/server'
+import { db } from '@/lib/db'
+import { NextResponse } from 'next/server'
 
+// GET
 export async function GET() {
   try {
-    const { data: seo } = await supabase.from('SEO').select('*').limit(1).single()
-    return Response.json(seo)
-  } catch {
-    return Response.json({ error: 'Gagal mengambil data SEO' }, { status: 500 })
+    const seo = await db.sEO.findFirst()
+    if (!seo) {
+      return NextResponse.json(
+        {
+          id: 'default',
+          frontendUrl: '',
+          title: 'PropertiHub - Temukan Hunian Impian Anda',
+          description: 'Platform pencarian properti terbaik untuk rumah, apartemen, dan tanah di Indonesia.',
+          keywords: 'properti, rumah, apartemen, jual rumah, beli rumah, propertihub',
+          image: 'https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?auto=format&fit=crop&w=800&q=80',
+        },
+        { status: 200 }
+      )
+    }
+    return NextResponse.json(seo)
+  } catch (error) {
+    console.error('Error fetching SEO:', error)
+    return NextResponse.json({ error: 'Failed to fetch SEO' }, { status: 500 })
   }
 }
 
-export async function PUT(req: NextRequest) {
+// PUT
+export async function PUT(request: Request) {
   try {
-    const body = await req.json()
-    const { frontendUrl, title, description, keywords, image } = body
+    const data = await request.json()
+    const existing = await db.sEO.findFirst()
 
-    const { data: existing } = await supabase.from('SEO').select('*').limit(1).single()
-
-    const updateFields: Record<string, unknown> = {}
-    if (frontendUrl !== undefined) updateFields.frontendUrl = frontendUrl
-    if (title !== undefined) updateFields.title = title
-    if (description !== undefined) updateFields.description = description
-    if (keywords !== undefined) updateFields.keywords = keywords
-    if (image !== undefined) updateFields.image = image
-
-    let seo
     if (existing) {
-      const { data, error } = await supabase.from('SEO').update(updateFields).eq('id', existing.id).select().single()
-      if (error) throw error
-      seo = data
+      const seo = await db.sEO.update({
+        where: { id: existing.id },
+        data,
+      })
+      return NextResponse.json(seo)
     } else {
-      const insertFields = {
-        frontendUrl: frontendUrl || '',
-        title: title || 'PropertiHub - Temukan Hunian Impian Anda',
-        description: description || 'Platform pencarian properti terbaik untuk rumah, apartemen, dan tanah di Indonesia.',
-        keywords: keywords || 'properti, rumah, apartemen, jual rumah, beli rumah, propertihub',
-        image: image || 'https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?auto=format&fit=crop&w=800&q=80',
-      }
-      const { data, error } = await supabase.from('SEO').insert(insertFields).select().single()
-      if (error) throw error
-      seo = data
+      const seo = await db.sEO.create({
+        data: { id: 'default', ...data },
+      })
+      return NextResponse.json(seo)
     }
-
-    return Response.json(seo)
-  } catch (error: unknown) {
-    const message = error instanceof Error ? error.message : 'Gagal mengupdate SEO'
-    return Response.json({ error: message }, { status: 400 })
+  } catch (error) {
+    console.error('Error updating SEO:', error)
+    return NextResponse.json({ error: 'Failed to update SEO' }, { status: 500 })
   }
 }

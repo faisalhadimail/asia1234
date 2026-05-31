@@ -1,35 +1,52 @@
-import { supabase } from '@/lib/supabase'
-import { NextRequest } from 'next/server'
+import { db } from '@/lib/db'
+import { NextResponse } from 'next/server'
 
-export async function GET() {
+// GET
+export async function GET(request: Request) {
+  const { searchParams } = new URL(request.url)
+  const id = searchParams.get('id')
+
   try {
-    const { data, error } = await supabase.from('Promo').select('*').order('id', { ascending: false })
-    if (error) throw error
-    return Response.json(data || [])
-  } catch {
-    return Response.json({ error: 'Gagal mengambil data promo' }, { status: 500 })
+    if (id) {
+      const promo = await db.promo.findUnique({ where: { id } })
+      if (!promo) {
+        return NextResponse.json({ error: 'Promo not found' }, { status: 404 })
+      }
+      return NextResponse.json(promo)
+    }
+    return NextResponse.json(await db.promo.findMany({ orderBy: { createdAt: 'asc' } }))
+  } catch (error) {
+    console.error('Error fetching promos:', error)
+    return NextResponse.json({ error: 'Failed to fetch promos' }, { status: 500 })
   }
 }
 
-export async function POST(req: NextRequest) {
+// POST
+export async function POST(request: Request) {
   try {
-    const body = await req.json()
-    const { badge, title, subtitle } = body
+    const data = await request.json()
+    const promo = await db.promo.create({ data })
+    return NextResponse.json(promo)
+  } catch (error) {
+    console.error('Error creating promo:', error)
+    return NextResponse.json({ error: 'Failed to create promo' }, { status: 500 })
+  }
+}
 
-    if (!title) {
-      return Response.json({ error: 'Judul promo wajib diisi' }, { status: 400 })
-    }
+// DELETE
+export async function DELETE(request: Request) {
+  const { searchParams } = new URL(request.url)
+  const id = searchParams.get('id')
 
-    const { data, error } = await supabase.from('Promo').insert({
-      badge: badge || 'PROMO',
-      title,
-      subtitle: subtitle || '',
-    }).select().single()
+  if (!id) {
+    return NextResponse.json({ error: 'ID is required' }, { status: 400 })
+  }
 
-    if (error) throw error
-    return Response.json(data)
-  } catch (error: unknown) {
-    const message = error instanceof Error ? error.message : 'Gagal membuat promo'
-    return Response.json({ error: message }, { status: 400 })
+  try {
+    await db.promo.delete({ where: { id } })
+    return NextResponse.json({ success: true })
+  } catch (error) {
+    console.error('Error deleting promo:', error)
+    return NextResponse.json({ error: 'Failed to delete promo' }, { status: 500 })
   }
 }

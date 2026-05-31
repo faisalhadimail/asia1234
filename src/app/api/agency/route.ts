@@ -1,48 +1,43 @@
-import { supabase } from '@/lib/supabase'
-import { NextRequest } from 'next/server'
+import { db } from '@/lib/db'
+import { NextResponse } from 'next/server'
 
+// GET
 export async function GET() {
   try {
-    const { data: agency } = await supabase.from('Agency').select('*').limit(1).single()
-    return Response.json(agency)
-  } catch {
-    return Response.json({ error: 'Gagal mengambil data agensi' }, { status: 500 })
+    const agency = await db.agency.findFirst()
+    if (!agency) {
+      return NextResponse.json(
+        { id: 'default', name: 'PropertiHub', phone: '', address: '', kprInterest: 5.5 },
+        { status: 200 }
+      )
+    }
+    return NextResponse.json(agency)
+  } catch (error) {
+    console.error('Error fetching agency:', error)
+    return NextResponse.json({ error: 'Failed to fetch agency' }, { status: 500 })
   }
 }
 
-export async function PUT(req: NextRequest) {
+// PUT
+export async function PUT(request: Request) {
   try {
-    const body = await req.json()
-    const { name, phone, address, kprInterest } = body
+    const data = await request.json()
+    const existing = await db.agency.findFirst()
 
-    const { data: existing } = await supabase.from('Agency').select('*').limit(1).single()
-
-    const updateFields: Record<string, unknown> = {}
-    if (name !== undefined) updateFields.name = name
-    if (phone !== undefined) updateFields.phone = phone
-    if (address !== undefined) updateFields.address = address
-    if (kprInterest !== undefined) updateFields.kprInterest = Number(kprInterest)
-
-    let agency
     if (existing) {
-      const { data, error } = await supabase.from('Agency').update(updateFields).eq('id', existing.id).select().single()
-      if (error) throw error
-      agency = data
+      const agency = await db.agency.update({
+        where: { id: existing.id },
+        data,
+      })
+      return NextResponse.json(agency)
     } else {
-      const insertFields = {
-        name: name || 'PropertiHub',
-        phone: phone || '',
-        address: address || '',
-        kprInterest: kprInterest !== undefined ? Number(kprInterest) : 5.5,
-      }
-      const { data, error } = await supabase.from('Agency').insert(insertFields).select().single()
-      if (error) throw error
-      agency = data
+      const agency = await db.agency.create({
+        data: { id: 'default', ...data },
+      })
+      return NextResponse.json(agency)
     }
-
-    return Response.json(agency)
-  } catch (error: unknown) {
-    const message = error instanceof Error ? error.message : 'Gagal mengupdate agensi'
-    return Response.json({ error: message }, { status: 400 })
+  } catch (error) {
+    console.error('Error updating agency:', error)
+    return NextResponse.json({ error: 'Failed to update agency' }, { status: 500 })
   }
 }

@@ -1,36 +1,52 @@
-import { supabase } from '@/lib/supabase'
-import { NextRequest } from 'next/server'
+import { db } from '@/lib/db'
+import { NextResponse } from 'next/server'
 
-export async function GET() {
+// GET
+export async function GET(request: Request) {
+  const { searchParams } = new URL(request.url)
+  const id = searchParams.get('id')
+
   try {
-    const { data, error } = await supabase.from('Agent').select('*').order('createdAt', { ascending: false })
-    if (error) throw error
-    return Response.json(data || [])
-  } catch {
-    return Response.json({ error: 'Gagal mengambil data agen' }, { status: 500 })
+    if (id) {
+      const agent = await db.agent.findUnique({ where: { id } })
+      if (!agent) {
+        return NextResponse.json({ error: 'Agent not found' }, { status: 404 })
+      }
+      return NextResponse.json(agent)
+    }
+    return NextResponse.json(await db.agent.findMany({ orderBy: { createdAt: 'asc' } }))
+  } catch (error) {
+    console.error('Error fetching agents:', error)
+    return NextResponse.json({ error: 'Failed to fetch agents' }, { status: 500 })
   }
 }
 
-export async function POST(req: NextRequest) {
+// POST
+export async function POST(request: Request) {
   try {
-    const body = await req.json()
-    const { name, role, phone, image } = body
+    const data = await request.json()
+    const agent = await db.agent.create({ data })
+    return NextResponse.json(agent)
+  } catch (error) {
+    console.error('Error creating agent:', error)
+    return NextResponse.json({ error: 'Failed to create agent' }, { status: 500 })
+  }
+}
 
-    if (!name) {
-      return Response.json({ error: 'Nama wajib diisi' }, { status: 400 })
-    }
+// DELETE
+export async function DELETE(request: Request) {
+  const { searchParams } = new URL(request.url)
+  const id = searchParams.get('id')
 
-    const { data, error } = await supabase.from('Agent').insert({
-      name,
-      role: role || 'Agen Properti',
-      phone: phone || '',
-      image: image || 'https://images.unsplash.com/photo-1560250097-0b93528c311a?auto=format&fit=crop&w=300&q=80',
-    }).select().single()
+  if (!id) {
+    return NextResponse.json({ error: 'ID is required' }, { status: 400 })
+  }
 
-    if (error) throw error
-    return Response.json(data)
-  } catch (error: unknown) {
-    const message = error instanceof Error ? error.message : 'Gagal membuat agen'
-    return Response.json({ error: message }, { status: 400 })
+  try {
+    await db.agent.delete({ where: { id } })
+    return NextResponse.json({ success: true })
+  } catch (error) {
+    console.error('Error deleting agent:', error)
+    return NextResponse.json({ error: 'Failed to delete agent' }, { status: 500 })
   }
 }

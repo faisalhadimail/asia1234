@@ -1,44 +1,66 @@
-import { supabase, parseJsonField } from '@/lib/supabase'
-import { NextRequest } from 'next/server'
+import { db } from '@/lib/db'
+import { NextResponse } from 'next/server'
 
-export async function GET() {
+// GET
+export async function GET(request: Request) {
+  const { searchParams } = new URL(request.url)
+  const id = searchParams.get('id')
+
   try {
-    const { data, error } = await supabase.from('Location').select('*').order('kabupaten', { ascending: true })
-    if (error) throw error
-
-    const parsed = (data || []).map((loc) => ({
-      ...loc,
-      kecamatan: parseJsonField<string[]>(loc.kecamatan),
-    }))
-
-    return Response.json(parsed)
-  } catch {
-    return Response.json({ error: 'Gagal mengambil data lokasi' }, { status: 500 })
+    if (id) {
+      const location = await db.location.findUnique({ where: { id } })
+      if (!location) {
+        return NextResponse.json({ error: 'Location not found' }, { status: 404 })
+      }
+      return NextResponse.json({
+        ...location,
+        kecamatan: JSON.parse(location.kecamatan || '[]'),
+      })
+    }
+    const locations = await db.location.findMany({ orderBy: { kabupaten: 'asc' } })
+    return NextResponse.json(
+      locations.map((loc) => ({
+        ...loc,
+        kecamatan: JSON.parse(loc.kecamatan || '[]'),
+      }))
+    )
+  } catch (error) {
+    console.error('Error fetching locations:', error)
+    return NextResponse.json({ error: 'Failed to fetch locations' }, { status: 500 })
   }
 }
 
-export async function POST(req: NextRequest) {
+// POST
+export async function POST(request: Request) {
   try {
-    const body = await req.json()
-    const { kabupaten, kecamatan } = body
-
-    if (!kabupaten) {
-      return Response.json({ error: 'Kabupaten wajib diisi' }, { status: 400 })
-    }
-
-    const { data, error } = await supabase.from('Location').insert({
-      kabupaten,
-      kecamatan: kecamatan || [],
-    }).select().single()
-
-    if (error) throw error
-
-    return Response.json({
-      ...data,
-      kecamatan: parseJsonField<string[]>(data.kecamatan),
+    const data = await request.json()
+    const location = await db.location.create({
+      data: {
+        ...data,
+        kecamatan: JSON.stringify(data.kecamatan || []),
+      },
     })
-  } catch (error: unknown) {
-    const message = error instanceof Error ? error.message : 'Gagal membuat lokasi'
-    return Response.json({ error: message }, { status: 400 })
+    return NextResponse.json(location)
+  } catch (error) {
+    console.error('Error creating location:', error)
+    return NextResponse.json({ error: 'Failed to create location' }, { status: 500 })
+  }
+}
+
+// DELETE
+export async function DELETE(request: Request) {
+  const { searchParams } = new URL(request.url)
+  const id = searchParams.get('id')
+
+  if (!id) {
+    return NextResponse.json({ error: 'ID is required' }, { status: 400 })
+  }
+
+  try {
+    await db.location.delete({ where: { id } })
+    return NextResponse.json({ success: true })
+  } catch (error) {
+    console.error('Error deleting location:', error)
+    return NextResponse.json({ error: 'Failed to delete location' }, { status: 500 })
   }
 }

@@ -513,10 +513,10 @@ export const useStore = create<AppState>((set, get) => ({
     const { showLoading, hideLoading, fetchAllData } = get()
     showLoading('Mengupdate status...')
     try {
-      await fetch(`/api/visitors/${id}`, {
+      await fetch('/api/visitors', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ status }),
+        body: JSON.stringify({ id, status }),
       })
       await fetchAllData()
     } catch (e) {
@@ -529,7 +529,7 @@ export const useStore = create<AppState>((set, get) => ({
     const { showLoading, hideLoading, fetchAllData } = get()
     showLoading('Menghapus lead...')
     try {
-      await fetch(`/api/visitors/${id}`, { method: 'DELETE' })
+      await fetch(`/api/visitors?id=${id}`, { method: 'DELETE' })
       await fetchAllData()
     } catch (e) {
       console.error(e)
@@ -753,7 +753,7 @@ export const useStore = create<AppState>((set, get) => ({
     const { showLoading, hideLoading } = get()
     showLoading('Mengirim pencarian...')
     try {
-      await fetch('/api/visitors', {
+      await fetch('/api/leads/submit', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(data),

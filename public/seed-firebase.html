@@ -1,0 +1,348 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Seed Firebase Data</title>
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+  <style>
+    body {
+      font-family: system-ui, sans-serif;
+      max-width: 800px;
+      margin: 50px auto;
+      padding: 20px;
+      background: #f9fafb;
+    }
+    .container {
+      background: white;
+      padding: 30px;
+      border-radius: 12px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+    h1 { color: #2563eb; }
+    .log {
+      background: #1f2937;
+      color: #10b981;
+      padding: 15px;
+      border-radius: 8px;
+      font-family: monospace;
+      white-space: pre-wrap;
+      max-height: 400px;
+      overflow-y: auto;
+    }
+    button {
+      background: #2563eb;
+      color: white;
+      border: none;
+      padding: 12px 24px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 16px;
+      margin-top: 20px;
+    }
+    button:hover { background: #1d4ed8; }
+    button:disabled { background: #9ca3af; cursor: not-allowed; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>🔥 Firebase Data Seeder</h1>
+    <p>Click the button below to seed dummy data to Firebase Firestore</p>
+    <button id="seedBtn" onclick="seedData()">📝 Seed Data to Firebase</button>
+    <div class="log" id="log"></div>
+  </div>
+
+  <script>
+    const firebaseConfig = {
+      apiKey: "AIzaSyB22tfg_7BGtNtPCQ6R8pS2tKoQb4JxxNs",
+      authDomain: "kprasia-f50c2.firebaseapp.com",
+      projectId: "kprasia-f50c2",
+      storageBucket: "kprasia-f50c2.firebasestorage.app",
+      messagingSenderId: "28449741969",
+      appId: "1:28449741969:web:f54bd399840da763467330",
+      measurementId: "G-EEHLGVMP57"
+    };
+
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.firestore();
+
+    const dummyData = {
+      propertyTypes: [
+        { name: 'Rumah', icon: 'home', order: 1 },
+        { name: 'Apartemen', icon: 'building-2', order: 2 },
+        { name: 'Tanah', icon: 'trees', order: 3 },
+        { name: 'Ruko', icon: 'building', order: 4 },
+      ],
+      locations: [
+        { kabupaten: 'Bandung', kecamatan: ['Andir', 'Antapani', 'Arcamanik', 'Astanaanyar', 'Babakanciparay', 'Bandung Kidul', 'Bandung Kulon', 'Bandung Wetan', 'Batununggal', 'Bojongloa Kidul', 'Bojongloa Kaler', 'Buahbatu', 'Cibiru', 'Cicendo', 'Cidadap', 'Cinambo', 'Coblong', 'Coblong'] },
+        { kabupaten: 'Bogor', kecamatan: ['Bogor Barat', 'Bogor Selatan', 'Bogor Tengah', 'Bogor Timur', 'Bogor Utara', 'Tanah Sareal'] },
+        { kabupaten: 'Bekasi', kecamatan: ['Bekasi Barat', 'Bekasi Selatan', 'Bekasi Timur', 'Bekasi Utara', 'Medan Satria', 'Pondok Gede', 'Jatiasih', 'Cikarang Utara', 'Cikarang Selatan'] },
+      ],
+      promos: [
+        { badge: 'PROMO', title: 'Gratis Biaya KPR', subtitle: 'Hingga 10 Juta Rupiah' },
+        { badge: 'HOT', title: 'Diskon DP 20%', subtitle: 'Khusus Bulan Ini' },
+        { badge: 'BEST', title: 'Cashback 15 Juta', subtitle: 'Langsung Tanpa Undi' },
+      ],
+      agents: [
+        { name: 'Budi Santoso', role: 'Senior Marketing', phone: '+62 812 1111 2222', image: 'https://images.unsplash.com/photo-1560250097-0b93528c311a?auto=format&fit=crop&w=300&q=80' },
+        { name: 'Siti Rahayu', role: 'Marketing Property', phone: '+62 812 3333 4444', image: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&w=300&q=80' },
+      ],
+      properties: [
+        {
+          title: 'Rumah Mewah di Dago Atas',
+          price: 2500000000,
+          dp: 500000000,
+          allInCost: 2600000000,
+          kabupaten: 'Bandung',
+          kecamatan: 'Coblong',
+          type: 'Rumah',
+          buildingType: '120/150',
+          description: 'Rumah mewah dengan view kota Bandung yang indah. Lokasi strategis dekat pusat perbelanjaan dan tempat wisata. Fasilitas lengkap dengan kolam renang pribadi, taman yang luas, dan garasi 2 mobil.',
+          images: ['https://images.unsplash.com/photo-1613490493576-7fde63acd811?auto=format&fit=crop&w=800&q=80', 'https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?auto=format&fit=crop&w=800&q=80'],
+          brochure: '',
+          permalink: 'rumah-mewah-dago-atas',
+          seoTitle: 'Rumah Mewah di Dago Atas - 2.5 Milyar',
+          seoDesc: 'Rumah mewah dengan view kota di Dago Atas, 3 kamar tidur, 3 kamar mandi, luas tanah 150m²',
+          seoKeywords: 'rumah mewah, dago atas, bandung, rumah view kota',
+          seoAuto: true,
+          promos: [{ id: 'promo-1', badge: 'PROMO', title: 'Gratis Biaya KPR', subtitle: 'Hingga 10 Juta Rupiah' }],
+        },
+        {
+          title: 'Apartemen Modern di Cibiru',
+          price: 750000000,
+          dp: 150000000,
+          allInCost: 780000000,
+          kabupaten: 'Bandung',
+          kecamatan: 'Cibiru',
+          type: 'Apartemen',
+          buildingType: '2BR',
+          description: 'Apartemen modern dengan desain minimalis dan fasilitas lengkap. Dekat dengan akses tol dan pintu tol Cibiru. Cocok untuk investasi atau hunian.',
+          images: ['https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?auto=format&fit=crop&w=800&q=80'],
+          brochure: '',
+          permalink: 'apartemen-cibiru',
+          seoTitle: 'Apartemen Modern Cibiru - 750 Juta',
+          seoDesc: 'Apartemen 2 bedroom di Cibiru, dekat akses tol, fasilitas lengkap',
+          seoKeywords: 'apartemen, cibiru, bandung, investasi apartemen',
+          seoAuto: true,
+          promos: [],
+        },
+        {
+          title: 'Ruko Strategis di Bekasi',
+          price: 1200000000,
+          dp: 240000000,
+          allInCost: 0,
+          kabupaten: 'Bekasi',
+          kecamatan: 'Cikarang Utara',
+          type: 'Ruko',
+          buildingType: '3 Lantai',
+          description: 'Ruko 3 lantai di kawasan industri Cikarang. Lokasi sangat strategis dekat kawasan industri dan perumahan. Cocok untuk usaha atau kantor.',
+          images: ['https://images.unsplash.com/photo-1556761175-5973dc0f32e7?auto=format&fit=crop&w=800&q=80'],
+          brochure: '',
+          permalink: 'ruko-cikarang',
+          seoTitle: 'Ruko 3 Lantai Cikarang - 1.2 Milyar',
+          seoDesc: 'Ruko 3 lantai di kawasan industri Cikarang, cocok untuk usaha',
+          seoKeywords: 'ruko, cikarang, bekasi, ruko usaha',
+          seoAuto: true,
+          promos: [],
+        },
+        {
+          title: 'Tanah Kavling di Bogor',
+          price: 450000000,
+          dp: 90000000,
+          allInCost: 0,
+          kabupaten: 'Bogor',
+          kecamatan: 'Bogor Selatan',
+          type: 'Tanah',
+          buildingType: '',
+          description: 'Tanah kavling siap bangun di kawasan sejuk Bogor. Lingkungan asri, dekat wisata air terjun. Cocok untuk rumah hunian atau villa.',
+          images: ['https://images.unsplash.com/photo-1500382017468-9049fed747ef?auto=format&fit=crop&w=800&q=80'],
+          brochure: '',
+          permalink: 'tanah-bogor',
+          seoTitle: 'Tanah Kavling Bogor - 450 Juta',
+          seoDesc: 'Tanah kavling di Bogor Selatan, lingkungan asri, siap bangun',
+          seoKeywords: 'tanah kavling, bogor, investasi tanah',
+          seoAuto: true,
+          promos: [],
+        },
+        {
+          title: 'Cluster Rumah Minimalis',
+          price: 850000000,
+          dp: 170000000,
+          allInCost: 880000000,
+          kabupaten: 'Bekasi',
+          kecamatan: 'Jatiasih',
+          type: 'Rumah',
+          buildingType: '45/72',
+          description: 'Rumah minimalis di cluster dengan keamanan 24 jam. Lingkungan nyaman, dekat sekolah dan pasar. Gratis biaya KPR khusus pembelian bulan ini.',
+          images: ['https://images.unsplash.com/photo-1580587771525-78b9dba3b914?auto=format&fit=crop&w=800&q=80', 'https://images.unsplash.com/photo-1570129477492-45c003edd2be?auto=format&fit=crop&w=800&q=80'],
+          brochure: '',
+          permalink: 'cluster-jatiasih',
+          seoTitle: 'Cluster Rumah Jatiasih - 850 Juta',
+          seoDesc: 'Rumah minimalis tipe 45/72 di cluster Jatiasih, keamanan 24 jam',
+          seoKeywords: 'rumah minimalis, jatiasih, bekasi, cluster rumah',
+          seoAuto: true,
+          promos: [{ id: 'promo-1', badge: 'PROMO', title: 'Gratis Biaya KPR', subtitle: 'Hingga 10 Juta Rupiah' }],
+        },
+      ],
+      visitors: [
+        { date: new Date().toISOString().split('T')[0], name: 'Andi Pratama', phone: '+62 811 2222 3333', type: 'Rumah', building: '45/72', location: 'Cibiru, Bandung', dp: 'Rp 150.000.000', promo: 'Gratis Biaya KPR', status: 'Menunggu Follow-up' },
+        { date: new Date().toISOString().split('T')[0], name: 'Dewi Sartika', phone: '+62 811 4444 5555', type: 'Apartemen', building: '2BR', location: 'Cibiru, Bandung', dp: 'Rp 150.000.000', promo: '-', status: 'Dihubungi' },
+      ],
+      adminUsers: [
+        { name: 'Administrator', username: 'admin', password: 'admin123', role: 'admin' },
+      ],
+      articles: [
+        {
+          title: 'Tips Memilih Rumah Pertama yang Tepat',
+          excerpt: 'Simak tips berikut sebelum membeli rumah pertama agar tidak menyesal di kemudian hari.',
+          content: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit.',
+          image: 'https://images.unsplash.com/photo-1560518883-ce09059eeffa?auto=format&fit=crop&w=800&q=80',
+          category: 'Tips Properti',
+          published: true,
+          permalink: 'tips-rumah-pertama',
+        },
+        {
+          title: 'Cara Menghitung Simulasi KPR yang Akurat',
+          excerpt: 'Panduan lengkap menghitung cicilan KPR agar terhindar dari masalah keuangan di masa depan.',
+          content: 'Ut enim ad minim veniam, quis nostrud exercitation.',
+          image: 'https://images.unsplash.com/photo-1554224155-8d04cb21cd6c?auto=format&fit=crop&w=800&q=80',
+          category: 'Keuangan',
+          published: true,
+          permalink: 'simulasi-kpr-akurat',
+        },
+      ],
+      reviews: [
+        { name: 'Rina Melati', review: 'Pelayanan sangat baik! Saya berhasil mendapatkan rumah impian dengan proses yang mudah dan cepat. Terima kasih tim PropertiHub!', rating: 5, featured: true, image: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=300&q=80' },
+        { name: 'Heri Setiawan', review: 'Agen yang sangat profesional dan membantu dari awal sampai akhir. Sangat merekomendasikan PropertiHub untuk mencari properti.', rating: 5, featured: true, image: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=300&q=80' },
+        { name: 'Linda Kusuma', review: 'Proses KPR dibantu sampai tuntas. Saya sangat puas dengan pelayanan dan rumah yang saya dapatkan.', rating: 4, featured: false, image: '' },
+      ],
+      agency: {
+        id: 'default',
+        name: 'PropertiHub',
+        phone: '+62 812 3456 7890',
+        address: 'Jl. Sudirman No. 123, Jakarta Pusat',
+        kprInterest: 5.5,
+      },
+      seo: {
+        id: 'default',
+        frontendUrl: 'https://propertihub.com',
+        title: 'PropertiHub - Temukan Hunian Impian Anda',
+        description: 'Platform pencarian properti terbaik untuk rumah, apartemen, dan tanah di Indonesia.',
+        keywords: 'properti, rumah, apartemen, jual rumah, beli rumah, propertihub',
+        image: 'https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?auto=format&fit=crop&w=800&q=80',
+      },
+    };
+
+    function log(message) {
+      const logEl = document.getElementById('log');
+      logEl.textContent += message + '\n';
+      logEl.scrollTop = logEl.scrollHeight;
+    }
+
+    async function seedData() {
+      const btn = document.getElementById('seedBtn');
+      btn.disabled = true;
+      log('🔥 Starting Firebase seeding...\n');
+
+      try {
+        // Property Types
+        log('📝 Migrating Property Types...');
+        for (const pt of dummyData.propertyTypes) {
+          await db.collection('propertyTypes').add(pt);
+        }
+        log(`✅ ${dummyData.propertyTypes.length} Property Types migrated\n`);
+
+        // Locations
+        log('📍 Migrating Locations...');
+        for (const loc of dummyData.locations) {
+          await db.collection('locations').add(loc);
+        }
+        log(`✅ ${dummyData.locations.length} Locations migrated\n`);
+
+        // Promos
+        log('🎁 Migrating Promos...');
+        for (const promo of dummyData.promos) {
+          const docRef = await db.collection('promos').add(promo);
+          promo.id = docRef.id;
+        }
+        log(`✅ ${dummyData.promos.length} Promos migrated\n`);
+
+        // Agents
+        log('👥 Migrating Agents...');
+        for (const agent of dummyData.agents) {
+          await db.collection('agents').add(agent);
+        }
+        log(`✅ ${dummyData.agents.length} Agents migrated\n`);
+
+        // Properties
+        log('🏢 Migrating Properties...');
+        for (const prop of dummyData.properties) {
+          await db.collection('properties').add(prop);
+        }
+        log(`✅ ${dummyData.properties.length} Properties migrated\n`);
+
+        // Visitors
+        log('📋 Migrating Visitors...');
+        for (const visitor of dummyData.visitors) {
+          await db.collection('visitors').add(visitor);
+        }
+        log(`✅ ${dummyData.visitors.length} Visitors migrated\n`);
+
+        // Admin Users
+        log('🔐 Migrating Admin Users...');
+        for (const user of dummyData.adminUsers) {
+          await db.collection('adminUsers').add(user);
+        }
+        log(`✅ ${dummyData.adminUsers.length} Admin Users migrated\n`);
+
+        // Articles
+        log('📰 Migrating Articles...');
+        for (const article of dummyData.articles) {
+          await db.collection('articles').add(article);
+        }
+        log(`✅ ${dummyData.articles.length} Articles migrated\n`);
+
+        // Reviews
+        log('⭐ Migrating Reviews...');
+        for (const review of dummyData.reviews) {
+          await db.collection('reviews').add(review);
+        }
+        log(`✅ ${dummyData.reviews.length} Reviews migrated\n`);
+
+        // Agency
+        log('🏢 Migrating Agency...');
+        await db.collection('agency').doc('default').set(dummyData.agency);
+        log('✅ Agency migrated\n');
+
+        // SEO
+        log('🔍 Migrating SEO...');
+        await db.collection('seo').doc('default').set(dummyData.seo);
+        log('✅ SEO migrated\n');
+
+        log('\n🎉 All data migrated successfully to Firebase!');
+        log('\n📊 Summary:');
+        log(`   - Property Types: ${dummyData.propertyTypes.length}`);
+        log(`   - Locations: ${dummyData.locations.length}`);
+        log(`   - Promos: ${dummyData.promos.length}`);
+        log(`   - Agents: ${dummyData.agents.length}`);
+        log(`   - Properties: ${dummyData.properties.length}`);
+        log(`   - Visitors: ${dummyData.visitors.length}`);
+        log(`   - Admin Users: ${dummyData.adminUsers.length}`);
+        log(`   - Articles: ${dummyData.articles.length}`);
+        log(`   - Reviews: ${dummyData.reviews.length}`);
+        log('\n🔐 Login Admin:');
+        log('   Username: admin');
+        log('   Password: admin123');
+
+      } catch (error) {
+        log('\n❌ Error during migration:');
+        log(error.message);
+        console.error(error);
+      }
+
+      btn.disabled = false;
+    }
+  </script>
+</body>
+</html>

@@ -3,104 +3,79 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
+  provider = "sqlite"
   url      = env("DATABASE_URL")
 }
 
-model AdminUser {
-  id        String   @id @default(uuid())
-  name      String
-  username  String   @unique
-  password  String
-  email     String?  @unique
-  role      String   @default("admin")
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+model Agency {
+  id          String @id @default(cuid())
+  name        String @default("PropertiHub")
+  phone       String @default("")
+  address     String @default("")
+  kprInterest Float  @default(5.5)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
 
-  @@map("AdminUser")
+model SEO {
+  id          String @id @default(cuid())
+  frontendUrl String @default("")
+  title       String @default("PropertiHub - Temukan Hunian Impian Anda")
+  description String @default("Platform pencarian properti terbaik untuk rumah, apartemen, dan tanah di Indonesia.")
+  keywords    String @default("properti, rumah, apartemen, jual rumah, beli rumah, propertihub")
+  image       String @default("https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?auto=format&fit=crop&w=800&q=80")
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 }
 
 model PropertyType {
-  id           String   @id @default(cuid())
-  name         String   @unique
-  icon         String   @default("home")
-  displayOrder Int      @default(0) @map("displayOrder")
-
-  @@map("PropertyType")
+  id   String @id @default(cuid())
+  name String
+  icon String @default("home")
+  order Int   @default(0)
 }
 
 model Location {
-  id        String   @id @default(cuid())
-  kabupaten String   @unique
-  kecamatan String   @default("[]")
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  @@map("Location")
-}
-
-model Agent {
-  id           String   @id @default(cuid())
-  name         String
-  role         String?
-  phone        String?
-  email        String?
-  image        String?
-  whatsapp     String?
-  displayOrder Int      @default(0) @map("displayOrder")
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
-
-  @@map("Agent")
-}
-
-model Promo {
-  id           String   @id @default(cuid())
-  badge        String?
-  title        String?
-  subtitle      String?
-  description   String?
-  active       Boolean  @default(true)
-  displayOrder Int      @default(0) @map("displayOrder")
-
-  properties PropertyPromo[]
-
-  @@map("Promo")
+  id         String  @id @default(cuid())
+  kabupaten  String
+  kecamatan  String  @default("[]")
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
 }
 
 model Property {
-  id           String   @id @default(cuid())
-  type         String
-  title        String
-  description  String?
-  buildingType String?
-  price        Float
-  dp           Float    @default(0)
-  allInCost    Float    @default(0)
-  kabupaten    String
-  kecamatan    String?
-  location     String?
-  images       String   @default("[]")
-  bedrooms     Int?
-  bathrooms    Int?
-  carports     Int?
-  buildingSize Int?
-  landSize     Int?
-  electricity  Int?
-  water        String?
-  certificate  String?
-  facilities   String   @default("[]")
-  contact      String?
-  status       String   @default("available")
-  featured     Boolean  @default(false)
-  permalink    String   @unique
-  brochure     String?
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  id          String   @id @default(cuid())
+  title       String
+  price       Float
+  dp          Float    @default(0)
+  allInCost   Float    @default(0)
+  kabupaten   String
+  kecamatan   String   @default("")
+  type        String
+  buildingType String  @default("")
+  description String   @default("")
+  images      String   @default("[]")
+  brochure    String   @default("")
+  permalink   String   @unique @default("")
+  seoTitle    String   @default("")
+  seoDesc     String   @default("")
+  seoKeywords String   @default("")
+  seoAuto     Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 
   promos PropertyPromo[]
+}
 
-  @@map("Property")
+model Promo {
+  id        String @id @default(cuid())
+  badge     String @default("PROMO")
+  title     String
+  subtitle  String @default("")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  properties PropertyPromo[]
 }
 
 model PropertyPromo {
@@ -111,56 +86,63 @@ model PropertyPromo {
   promo    Promo    @relation(fields: [promoId], references: [id], onDelete: Cascade)
 
   @@id([propertyId, promoId])
-  @@map("PropertyPromo")
+}
+
+model Agent {
+  id     String @id @default(cuid())
+  name   String
+  role   String @default("Agen Properti")
+  phone  String @default("")
+  image  String @default("https://images.unsplash.com/photo-1560250097-0b93528c311a?auto=format&fit=crop&w=300&q=80")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Visitor {
+  id        String   @id @default(cuid())
+  date      String
+  name      String   @default("")
+  phone     String   @default("")
+  type      String   @default("")
+  building  String   @default("")
+  location  String   @default("")
+  dp        String   @default("")
+  promo     String   @default("")
+  status    String   @default("Baru")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model AdminUser {
+  id       String @id @default(cuid())
+  name     String @default("")
+  username String @unique
+  password String
+  role     String @default("admin")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 model Article {
   id        String   @id @default(cuid())
   title     String
-  slug      String   @unique
-  excerpt   String?
-  content   String?
-  image     String?
-  category  String   @default("General")
-  author    String?
-  published Boolean  @default(true)
+  excerpt   String   @default("")
+  content   String   @default("")
+  image     String   @default("")
+  category  String   @default("")
+  published Boolean  @default(false)
+  permalink  String   @unique @default("")
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-
-  @@map("Article")
 }
 
 model Review {
-  id          String   @id @default(cuid())
-  name        String
-  review      String
-  rating      Int      @default(5)
-  image       String?
-  featured    Boolean  @default(false)
-  propertyId  String?
-  propertyTitle String?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-
-  @@map("Review")
-}
-
-model Visitor {
-  id        String   @id @default(uuid())
-  date      String   @default("")
-  name      String?
-  phone     String?
-  email     String?
-  type      String?
-  building  String?
-  location  String?
-  dp        String?
-  promo     String?
-  status    String   @default("new")
-  notes     String?
-  interest  String?
+  id       String @id @default(cuid())
+  name     String
+  review   String
+  rating   Int    @default(5)
+  featured Boolean @default(false)
+  image    String @default("")
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-
-  @@map("Visitor")
 }

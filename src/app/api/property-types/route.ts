@@ -1,35 +1,42 @@
-import { supabase } from '@/lib/supabase'
-import { NextRequest } from 'next/server'
+import { db } from '@/lib/db'
+import { NextResponse } from 'next/server'
 
+// GET
 export async function GET() {
   try {
-    const { data, error } = await supabase.from('PropertyType').select('*').order('order', { ascending: true })
-    if (error) throw error
-    return Response.json(data || [])
-  } catch {
-    return Response.json({ error: 'Gagal mengambil data tipe properti' }, { status: 500 })
+    return NextResponse.json(await db.propertyType.findMany({ orderBy: { order: 'asc' } }))
+  } catch (error) {
+    console.error('Error fetching property types:', error)
+    return NextResponse.json({ error: 'Failed to fetch property types' }, { status: 500 })
   }
 }
 
-export async function POST(req: NextRequest) {
+// POST
+export async function POST(request: Request) {
   try {
-    const body = await req.json()
-    const { name, icon, order } = body
+    const data = await request.json()
+    const propertyType = await db.propertyType.create({ data })
+    return NextResponse.json(propertyType)
+  } catch (error) {
+    console.error('Error creating property type:', error)
+    return NextResponse.json({ error: 'Failed to create property type' }, { status: 500 })
+  }
+}
 
-    if (!name) {
-      return Response.json({ error: 'Nama tipe wajib diisi' }, { status: 400 })
-    }
+// DELETE
+export async function DELETE(request: Request) {
+  const { searchParams } = new URL(request.url)
+  const id = searchParams.get('id')
 
-    const { data, error } = await supabase.from('PropertyType').insert({
-      name,
-      icon: icon || 'home',
-      order: order ?? 0,
-    }).select().single()
+  if (!id) {
+    return NextResponse.json({ error: 'ID is required' }, { status: 400 })
+  }
 
-    if (error) throw error
-    return Response.json(data)
-  } catch (error: unknown) {
-    const message = error instanceof Error ? error.message : 'Gagal membuat tipe properti'
-    return Response.json({ error: message }, { status: 400 })
+  try {
+    await db.propertyType.delete({ where: { id } })
+    return NextResponse.json({ success: true })
+  } catch (error) {
+    console.error('Error deleting property type:', error)
+    return NextResponse.json({ error: 'Failed to delete property type' }, { status: 500 })
   }
 }

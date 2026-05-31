@@ -1,65 +1,81 @@
-import { supabase, parseJsonField, extractPromos } from '@/lib/supabase'
-
-async function safeQuery<T>(fn: () => Promise<{ data: T | null; error: any }>): Promise<T | null> {
-  try {
-    const result = await fn()
-    if (result.error) {
-      // Table doesn't exist yet
-      if (result.error.code === '42P01') return null
-      return null
-    }
-    return result.data
-  } catch {
-    return null
-  }
-}
+import { db } from '@/lib/db'
+import { NextResponse } from 'next/server'
 
 export async function GET() {
   try {
-    const [agency, seo, propertyTypes, locations, properties, agents, promos, articles, reviews, adminUsers, visitors] = await Promise.all([
-      safeQuery(() => supabase.from('Agency').select('*').limit(1).single()),
-      safeQuery(() => supabase.from('SEO').select('*').limit(1).single()),
-      safeQuery(() => supabase.from('PropertyType').select('*').order('order', { ascending: true })),
-      safeQuery(() => supabase.from('Location').select('*').order('kabupaten', { ascending: true })),
-      safeQuery(() => supabase.from('Property').select(`
-        *,
-        PropertyPromo(
-          promoId,
-          promo:Promo(*)
-        )
-      `).order('createdAt', { ascending: false })),
-      safeQuery(() => supabase.from('Agent').select('*').order('createdAt', { ascending: false })),
-      safeQuery(() => supabase.from('Promo').select('*').order('id', { ascending: false })),
-      safeQuery(() => supabase.from('Article').select('*').order('createdAt', { ascending: false })),
-      safeQuery(() => supabase.from('Review').select('*').order('createdAt', { ascending: false })),
-      safeQuery(() => supabase.from('AdminUser').select('id, name, username, role, createdAt, updatedAt').order('createdAt', { ascending: false })),
-      safeQuery(() => supabase.from('Visitor').select('*').order('createdAt', { ascending: false })),
+    const [
+      properties,
+      agents,
+      promos,
+      visitors,
+      propertyTypes,
+      locations,
+      agency,
+      seo,
+      adminUsers,
+      articles,
+      reviews,
+    ] = await Promise.all([
+      db.property.findMany({
+        include: { promos: { include: { promo: true } } },
+        orderBy: { createdAt: 'desc' },
+      }),
+      db.agent.findMany({ orderBy: { createdAt: 'asc' } }),
+      db.promo.findMany({ orderBy: { createdAt: 'asc' } }),
+      db.visitor.findMany({ orderBy: { createdAt: 'desc' } }),
+      db.propertyType.findMany({ orderBy: { order: 'asc' } }),
+      db.location.findMany({ orderBy: { kabupaten: 'asc' } }),
+      db.agency.findFirst(),
+      db.sEO.findFirst(),
+      db.adminUser.findMany({
+        select: { id: true, name: true, username: true, role: true },
+      }),
+      db.article.findMany({ orderBy: { createdAt: 'desc' } }),
+      db.review.findMany({ orderBy: { createdAt: 'desc' } }),
     ])
 
-    const parsedLocations = (locations || []).map((loc: any) => ({
-      ...loc,
-      kecamatan: parseJsonField<string[]>(loc.kecamatan),
-    }))
-    const parsedProperties = (properties || []).map((p: any) => ({
-      ...p,
-      images: parseJsonField<string[]>(p.images),
-      promos: extractPromos(p.PropertyPromo),
+    // Format properties with promo data
+    const formattedProperties = properties.map((prop) => ({
+      ...prop,
+      images: JSON.parse(prop.images || '[]'),
+      promos: prop.promos.map((pp) => pp.promo),
     }))
 
-    return Response.json({
-      agency: agency || null,
-      seo: seo || null,
-      propertyTypes: propertyTypes || [],
-      locations: parsedLocations,
-      properties: parsedProperties,
-      agents: agents || [],
-      promos: promos || [],
-      articles: articles || [],
-      reviews: reviews || [],
-      adminUsers: adminUsers || [],
-      visitors: visitors || [],
+    // Format locations
+    const formattedLocations = locations.map((loc) => ({
+      ...loc,
+      kecamatan: JSON.parse(loc.kecamatan || '[]'),
+    }))
+
+    // Format articles
+    const formattedArticles = articles.map((art) => ({
+      ...art,
+      createdAt: art.createdAt.toISOString(),
+      updatedAt: art.updatedAt.toISOString(),
+    }))
+
+    // Format reviews
+    const formattedReviews = reviews.map((rev) => ({
+      ...rev,
+      createdAt: rev.createdAt.toISOString(),
+      updatedAt: rev.updatedAt.toISOString(),
+    }))
+
+    return NextResponse.json({
+      properties: formattedProperties,
+      agents,
+      promos,
+      visitors,
+      propertyTypes,
+      locations: formattedLocations,
+      agency,
+      seo,
+      adminUsers,
+      articles: formattedArticles,
+      reviews: formattedReviews,
     })
-  } catch {
-    return Response.json({ error: 'Gagal mengambil data inisialisasi' }, { status: 500 })
+  } catch (error) {
+    console.error('Error fetching data:', error)
+    return NextResponse.json({ error: 'Failed to fetch data' }, { status: 500 })
   }
 }

@@ -1,47 +1,53 @@
-import { db } from '@/lib/db'
 import { NextResponse } from 'next/server'
+import { supabase, isSupabaseConfigured } from '@/lib/supabase'
 
 export async function GET() {
-  try {
-    // Check if DATABASE_URL is configured
-    const databaseUrl = process.env.DATABASE_URL
+  const config = isSupabaseConfigured()
 
-    if (!databaseUrl || databaseUrl.includes('placeholder')) {
+  if (!config.ok) {
+    return NextResponse.json({
+      status: 'not_configured',
+      message: 'Supabase belum dikonfigurasi dengan benar',
+      issues: config.issues,
+      hint: 'Tambahkan NEXT_PUBLIC_SUPABASE_URL dan NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY di file .env',
+    }, { status: 503 })
+  }
+
+  try {
+    // Try a lightweight query to verify connection
+    const { count, error } = await supabase
+      .from('Property')
+      .select('*', { count: 'exact', head: true })
+
+    if (error) {
+      // Check for API key error
+      if (error.message?.includes('Invalid API key') || error.message?.includes('api key')) {
+        return NextResponse.json({
+          status: 'invalid_key',
+          message: 'API Key Supabase tidak valid',
+          issues: ['NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY salah atau expired'],
+          hint: 'Dapatkan anon key dari Supabase Dashboard > Settings > API > Project API keys > anon public',
+        }, { status: 503 })
+      }
+
       return NextResponse.json({
-        connected: false,
-        message: 'Database belum dikonfigurasi',
-        tables: {}
-      })
+        status: 'error',
+        message: 'Gagal terhubung ke database',
+        error: error.message,
+      }, { status: 503 })
     }
 
-    // Try to query tables with Prisma
-    const adminCount = await db.adminUser.count()
-    const visitorCount = await db.visitor.count()
-
     return NextResponse.json({
-      connected: true,
-      message: 'Terhubung ke database via Prisma',
-      tables: {
-        AdminUser: {
-          exists: true,
-          count: adminCount,
-          error: null
-        },
-        Visitor: {
-          exists: true,
-          count: visitorCount,
-          error: null
-        }
-      },
-      connectionType: 'Prisma ORM'
+      status: 'connected',
+      message: 'Database terhubung',
+      propertyCount: count ?? 0,
     })
-  } catch (error: unknown) {
-    console.error('DB Status error:', error)
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : 'Unknown error'
     return NextResponse.json({
-      connected: false,
-      message: error instanceof Error ? error.message : 'Gagal mengecek status database',
-      tables: {},
-      connectionType: 'Prisma ORM'
-    }, { status: 500 })
+      status: 'error',
+      message: 'Gagal terhubung ke database',
+      error: message,
+    }, { status: 503 })
   }
 }

@@ -1,78 +1,67 @@
-import { supabase } from '@/lib/supabase'
-import { NextRequest } from 'next/server'
+import { db } from '@/lib/db'
+import { NextResponse } from 'next/server'
 
-export async function GET() {
+// GET
+export async function GET(request: Request) {
+  const { searchParams } = new URL(request.url)
+  const id = searchParams.get('id')
+
   try {
-    const { data, error } = await supabase
-      .from('Review')
-      .select('*')
-      .order('createdAt', { ascending: false })
-    if (error) {
-      return Response.json([])
+    if (id) {
+      const review = await db.review.findUnique({ where: { id } })
+      if (!review) {
+        return NextResponse.json({ error: 'Review not found' }, { status: 404 })
+      }
+      return NextResponse.json({
+        ...review,
+        createdAt: review.createdAt.toISOString(),
+        updatedAt: review.updatedAt.toISOString(),
+      })
     }
-    return Response.json(data || [])
-  } catch {
-    return Response.json([])
+    const reviews = await db.review.findMany({ orderBy: { createdAt: 'desc' } })
+    return NextResponse.json(
+      reviews.map((rev) => ({
+        ...rev,
+        createdAt: rev.createdAt.toISOString(),
+        updatedAt: rev.updatedAt.toISOString(),
+      }))
+    )
+  } catch (error) {
+    console.error('Error fetching reviews:', error)
+    return NextResponse.json({ error: 'Failed to fetch reviews' }, { status: 500 })
   }
 }
 
-export async function POST(req: NextRequest) {
+// POST
+export async function POST(request: Request) {
   try {
-    const body = await req.json()
-    const {
-      id,
-      name,
-      phone,
-      rating,
-      review,
-      propertyId,
-      image,
-      featured,
-      createdAt,
-      updatedAt,
-    } = body
-
-    if (!name) {
-      return Response.json({ error: 'Nama wajib diisi' }, { status: 400 })
-    }
-    if (!rating || rating < 1 || rating > 5) {
-      return Response.json({ error: 'Rating harus antara 1-5' }, { status: 400 })
-    }
-
-    const { data, error } = await supabase.from('Review').insert({
-      id: id || `review-${Date.now()}`,
-      name,
-      phone: phone || '',
-      rating: Number(rating),
-      review: review || '',
-      propertyId: propertyId || '',
-      image: image || '',
-      featured: featured || false,
-      createdAt: createdAt || new Date().toISOString(),
-      updatedAt: updatedAt || new Date().toISOString(),
-    }).select().single()
-
-    if (error) throw error
-    return Response.json(data)
-  } catch (error: unknown) {
-    const message = error instanceof Error ? error.message : 'Gagal membuat review'
-    return Response.json({ error: message }, { status: 400 })
+    const data = await request.json()
+    const review = await db.review.create({ data })
+    return NextResponse.json({
+      ...review,
+      createdAt: review.createdAt.toISOString(),
+      updatedAt: review.updatedAt.toISOString(),
+    })
+  } catch (error) {
+    console.error('Error creating review:', error)
+    return NextResponse.json({ error: 'Failed to create review' }, { status: 500 })
   }
 }
 
-export async function DELETE(req: NextRequest) {
-  try {
-    const { searchParams } = new URL(req.url)
-    const id = searchParams.get('id')
-    if (!id) {
-      return Response.json({ error: 'ID wajib diisi' }, { status: 400 })
-    }
+// DELETE
+export async function DELETE(request: Request) {
+  const { searchParams } = new URL(request.url)
+  const id = searchParams.get('id')
 
-    const { error } = await supabase.from('Review').delete().eq('id', id)
-    if (error) throw error
-    return Response.json({ success: true })
-  } catch (error: unknown) {
-    const message = error instanceof Error ? error.message : 'Gagal menghapus review'
-    return Response.json({ error: message }, { status: 400 })
+  if (!id) {
+    return NextResponse.json({ error: 'ID is required' }, { status: 400 })
+  }
+
+  try {
+    await db.review.delete({ where: { id } })
+    return NextResponse.json({ success: true })
+  } catch (error) {
+    console.error('Error deleting review:', error)
+    return NextResponse.json({ error: 'Failed to delete review' }, { status: 500 })
   }
 }

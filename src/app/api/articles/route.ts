@@ -1,84 +1,67 @@
-import { supabase } from '@/lib/supabase'
-import { NextRequest } from 'next/server'
+import { db } from '@/lib/db'
+import { NextResponse } from 'next/server'
 
-export async function GET() {
+// GET
+export async function GET(request: Request) {
+  const { searchParams } = new URL(request.url)
+  const id = searchParams.get('id')
+
   try {
-    const { data, error } = await supabase
-      .from('Article')
-      .select('*')
-      .order('createdAt', { ascending: false })
-    if (error) {
-      // Table doesn't exist or other error - return empty
-      return Response.json([])
+    if (id) {
+      const article = await db.article.findUnique({ where: { id } })
+      if (!article) {
+        return NextResponse.json({ error: 'Article not found' }, { status: 404 })
+      }
+      return NextResponse.json({
+        ...article,
+        createdAt: article.createdAt.toISOString(),
+        updatedAt: article.updatedAt.toISOString(),
+      })
     }
-    return Response.json(data || [])
-  } catch {
-    return Response.json([])
+    const articles = await db.article.findMany({ orderBy: { createdAt: 'desc' } })
+    return NextResponse.json(
+      articles.map((art) => ({
+        ...art,
+        createdAt: art.createdAt.toISOString(),
+        updatedAt: art.updatedAt.toISOString(),
+      }))
+    )
+  } catch (error) {
+    console.error('Error fetching articles:', error)
+    return NextResponse.json({ error: 'Failed to fetch articles' }, { status: 500 })
   }
 }
 
-export async function POST(req: NextRequest) {
+// POST
+export async function POST(request: Request) {
   try {
-    const body = await req.json()
-    const {
-      id,
-      title,
-      slug,
-      image,
-      author,
-      category,
-      excerpt,
-      content,
-      published,
-      seoTitle,
-      seoDesc,
-      seoKeywords,
-      createdAt,
-      updatedAt,
-    } = body
-
-    if (!title) {
-      return Response.json({ error: 'Judul artikel wajib diisi' }, { status: 400 })
-    }
-
-    const { data, error } = await supabase.from('Article').insert({
-      id: id || `article-${Date.now()}`,
-      title,
-      slug: slug || title.toLowerCase().replace(/[^a-z0-9\s-]/g, '').replace(/\s+/g, '-').replace(/-+/g, '-').trim(),
-      image: image || '',
-      author: author || '',
-      category: category || 'Umum',
-      excerpt: excerpt || '',
-      content: content || '',
-      published: published || false,
-      seoTitle: seoTitle || '',
-      seoDesc: seoDesc || '',
-      seoKeywords: seoKeywords || '',
-      createdAt: createdAt || new Date().toISOString(),
-      updatedAt: updatedAt || new Date().toISOString(),
-    }).select().single()
-
-    if (error) throw error
-    return Response.json(data)
-  } catch (error: unknown) {
-    const message = error instanceof Error ? error.message : 'Gagal membuat artikel'
-    return Response.json({ error: message }, { status: 400 })
+    const data = await request.json()
+    const article = await db.article.create({ data })
+    return NextResponse.json({
+      ...article,
+      createdAt: article.createdAt.toISOString(),
+      updatedAt: article.updatedAt.toISOString(),
+    })
+  } catch (error) {
+    console.error('Error creating article:', error)
+    return NextResponse.json({ error: 'Failed to create article' }, { status: 500 })
   }
 }
 
-export async function DELETE(req: NextRequest) {
-  try {
-    const { searchParams } = new URL(req.url)
-    const id = searchParams.get('id')
-    if (!id) {
-      return Response.json({ error: 'ID wajib diisi' }, { status: 400 })
-    }
+// DELETE
+export async function DELETE(request: Request) {
+  const { searchParams } = new URL(request.url)
+  const id = searchParams.get('id')
 
-    const { error } = await supabase.from('Article').delete().eq('id', id)
-    if (error) throw error
-    return Response.json({ success: true })
-  } catch (error: unknown) {
-    const message = error instanceof Error ? error.message : 'Gagal menghapus artikel'
-    return Response.json({ error: message }, { status: 400 })
+  if (!id) {
+    return NextResponse.json({ error: 'ID is required' }, { status: 400 })
+  }
+
+  try {
+    await db.article.delete({ where: { id } })
+    return NextResponse.json({ success: true })
+  } catch (error) {
+    console.error('Error deleting article:', error)
+    return NextResponse.json({ error: 'Failed to delete article' }, { status: 500 })
   }
 }

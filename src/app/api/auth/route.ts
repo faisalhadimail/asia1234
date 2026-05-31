@@ -11,7 +11,7 @@ export async function POST(req: NextRequest) {
     }
 
     const user = await db.adminUser.findUnique({
-      where: { username }
+      where: { username },
     })
 
     if (!user || user.password !== password) {
@@ -27,7 +27,7 @@ export async function POST(req: NextRequest) {
         role: user.role,
       },
     })
-  } catch (error: unknown) {
+  } catch (error) {
     console.error('Auth error:', error)
     return Response.json({ success: false, error: 'Terjadi kesalahan server' }, { status: 500 })
   }
